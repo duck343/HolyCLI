@@ -1,3 +1,7 @@
 node_modules/
 dist/
 out/
+
+# AI context files (auto-generated per session)
+AI_CONTEXT.md
+CLAUDE.md
