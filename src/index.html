@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Claude Chat</title>
+  <title>Holy CLI</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css" />
   <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js"></script>
@@ -14,6 +14,7 @@
 <body>
   <div id="app">
 
+    <!-- Titlebar -->
     <div id="titlebar">
       <div id="drag-region">
         <div id="app-icon">
@@ -22,34 +23,76 @@
             <path d="M8 12h8M12 8l4 4-4 4" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <span id="app-title">Claude Chat</span>
+        <span id="app-title">Holy CLI</span>
         <div id="status-dot"></div>
       </div>
 
       <div id="titlebar-controls">
-        <button id="btn-font-down" title="Decrease font size">A-</button>
-        <span id="font-size-display">14</span>
-        <button id="btn-font-up" title="Increase font size">A+</button>
+
+        <!-- Save context -->
+        <div id="save-btn-wrap" class="tb-wrap">
+          <button id="btn-save-ctx" title="Save AI context file">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <polyline points="7 3 7 8 15 8" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+            <span class="tb-label">Save</span>
+          </button>
+          <div id="save-ctx-panel" class="hidden">
+            <div class="save-ctx-title">Save AI context</div>
+            <div id="save-ctx-folder-row">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              <span id="save-ctx-folder-label">No folder selected</span>
+            </div>
+            <textarea id="save-ctx-note" placeholder="Optional note for other AIs..." rows="3"></textarea>
+            <button id="save-ctx-btn">Save AI_CONTEXT.md</button>
+            <div id="save-ctx-status" class="hidden"></div>
+          </div>
+        </div>
+
+        <!-- Load context -->
+        <button id="btn-load-ctx" title="Send AI context prompt to active terminal">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2v10m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span class="tb-label">Load ctx</span>
+        </button>
+
         <div class="sep"></div>
+
+        <!-- Utility -->
+        <button id="btn-split" title="Split view">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="3" width="9" height="18" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="13" y="3" width="9" height="18" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </button>
+        <button id="btn-find" title="Find (Ctrl+F)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/>
+            <path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <div class="sep"></div>
+
         <button id="btn-settings" title="Settings">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
             <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </button>
         <button id="btn-pin" title="Always on top">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
             <path d="M12 2l2.4 6.4H21l-5.4 4 2 6.4L12 15l-5.6 3.8 2-6.4L3 8.4h6.6L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
           </svg>
         </button>
+
         <div class="sep"></div>
-        <button id="btn-find" title="Find (Ctrl+F)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/>
-            <path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </button>
-        <div class="sep"></div>
+
+        <!-- Window controls -->
         <button id="btn-minimize" class="wc" title="Minimize">
           <svg width="10" height="2" viewBox="0 0 10 2"><rect width="10" height="2" rx="1" fill="currentColor"/></svg>
         </button>
@@ -59,9 +102,11 @@
         <button id="btn-close" class="wc close" title="Close">
           <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         </button>
+
       </div>
     </div>
 
+    <!-- Find bar -->
     <div id="find-bar" class="hidden">
       <input id="find-input" type="text" placeholder="Find in terminal..." autocomplete="off" />
       <button id="find-prev">↑</button>
@@ -69,10 +114,22 @@
       <button id="find-close">✕</button>
     </div>
 
-    <div id="terminal-container">
-      <div id="terminal"></div>
+    <!-- Tab bar -->
+    <div id="tab-bar">
+      <div id="tab-list"></div>
+      <button id="btn-new-tab" title="New tab (Ctrl+T)">+</button>
     </div>
 
+    <!-- Terminal area -->
+    <div id="main-area">
+      <div id="terminal-area">
+        <div id="terminal-pane-main"></div>
+        <div id="split-resizer" class="hidden"></div>
+        <div id="terminal-pane-split" class="hidden"></div>
+      </div>
+    </div>
+
+    <!-- Settings panel -->
     <div id="settings-panel" class="hidden">
       <div id="settings-inner">
         <h3>Settings</h3>
@@ -94,12 +151,70 @@
           <span>Always on top</span>
           <input type="checkbox" id="pin-toggle" />
         </label>
+        <label class="row">
+          <span>Notifications</span>
+          <input type="checkbox" id="notify-toggle" checked />
+        </label>
+        <div id="theme-section">
+          <div class="theme-label">Theme</div>
+          <div id="theme-buttons">
+            <button class="theme-btn active" data-theme="purple">Purple</button>
+            <button class="theme-btn" data-theme="ocean">Ocean</button>
+            <button class="theme-btn" data-theme="crimson">Crimson</button>
+            <button class="theme-btn" data-theme="matrix">Matrix</button>
+            <button class="theme-btn" data-theme="tokyo">Tokyo</button>
+            <button class="theme-btn" data-theme="catppuccin">Catppuccin</button>
+            <button class="theme-btn" data-theme="nord">Nord</button>
+            <button class="theme-btn" data-theme="dracula">Dracula</button>
+          </div>
+        </div>
         <button id="settings-close">Close</button>
       </div>
     </div>
 
   </div>
 
+  <!-- New Tab Picker Panel -->
+  <div id="ntp-panel" class="hidden">
+    <div class="ntp-label">SHELL</div>
+    <div class="chip-group" id="shell-chip-group">
+      <button class="chip active" data-shell="powershell">PowerShell</button>
+      <button class="chip" data-shell="cmd">CMD</button>
+      <button class="chip" data-shell="gitbash">Git Bash</button>
+      <button class="chip" data-shell="wsl">WSL</button>
+    </div>
+
+    <div class="ntp-label">AI</div>
+    <div class="chip-group" id="ai-chip-group">
+      <button class="chip active" data-ai="none">None</button>
+      <button class="chip" data-ai="claude">Claude</button>
+      <button class="chip" data-ai="codex">Codex</button>
+      <button class="chip" data-ai="gemini">Gemini</button>
+    </div>
+    <div id="ntp-skip-row" class="hidden">
+      <span>Skip permissions</span>
+      <label class="ai-toggle">
+        <input type="checkbox" id="ntp-skip-perms" />
+        <span class="ai-toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="ntp-label">FOLDER</div>
+    <div id="ntp-saved-folders"></div>
+    <button id="ntp-pick-folder">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      <span id="ntp-folder-label">Choose folder (optional)</span>
+    </button>
+
+    <button id="ntp-open-btn">Open Tab</button>
+  </div>
+
+  <!-- Drop overlay -->
+  <div id="drop-overlay" class="hidden">
+    <div id="drop-hint">Drop files to paste path</div>
+  </div>
+
+  <!-- Context menu -->
   <div id="context-menu" class="hidden">
     <ul>
       <li id="ctx-copy">Copy</li>
