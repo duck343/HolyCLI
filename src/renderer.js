@@ -1,10 +1,10 @@
 const api = window.electronAPI
 
 // ── State ────────────────────────────────────────────────────────────────
-let fontSize = 14
-let autoScroll = true
+let fontSize = parseInt(localStorage.getItem('fontSize') || '14')
+let autoScroll = JSON.parse(localStorage.getItem('autoScroll') ?? 'true')
 let isPinned = false
-let notificationsEnabled = true
+let notificationsEnabled = JSON.parse(localStorage.getItem('notifications') ?? 'true')
 let activeTabId = null
 let isSplit = false
 let tabCounter = 0
@@ -20,43 +20,52 @@ let newTabFolder = ''
 // ── Themes ───────────────────────────────────────────────────────────────
 const THEMES = {
   purple: {
+    // Amethyst — indigo blues, violet magentas, electric cyan
     css: { '--bg':'rgba(10,8,20,0.82)', '--accent':'#a78bfa', '--accent2':'#7c3aed', '--text':'#e2e0f0', '--text-muted':'rgba(226,224,240,0.45)', '--danger':'#f87171' },
-    terminal: { background:'transparent',foreground:'#e2e0f0',cursor:'#a78bfa',cursorAccent:'#0a0814',selectionBackground:'rgba(167,139,250,0.3)',black:'#1a1730',red:'#f87171',green:'#4ade80',yellow:'#facc15',blue:'#60a5fa',magenta:'#a78bfa',cyan:'#34d399',white:'#e2e0f0',brightBlack:'#3d3660',brightRed:'#fca5a5',brightGreen:'#86efac',brightYellow:'#fde047',brightBlue:'#93c5fd',brightMagenta:'#c4b5fd',brightCyan:'#6ee7b7',brightWhite:'#f0eeff' },
+    terminal: { background:'transparent',foreground:'#e2e0f0',cursor:'#a78bfa',cursorAccent:'#0a0814',selectionBackground:'rgba(167,139,250,0.3)',black:'#1a1730',red:'#f87171',green:'#4ade80',yellow:'#fbbf24',blue:'#818cf8',magenta:'#c084fc',cyan:'#22d3ee',white:'#e2e0f0',brightBlack:'#4a3f7a',brightRed:'#fca5a5',brightGreen:'#86efac',brightYellow:'#fde047',brightBlue:'#a5b4fc',brightMagenta:'#e879f9',brightCyan:'#67e8f9',brightWhite:'#f5f3ff' },
   },
   ocean: {
-    css: { '--bg':'rgba(4,12,20,0.85)', '--accent':'#34d399', '--accent2':'#059669', '--text':'#d1fae5', '--text-muted':'rgba(209,250,229,0.45)', '--danger':'#f87171' },
-    terminal: { background:'transparent',foreground:'#d1fae5',cursor:'#34d399',cursorAccent:'#04111e',selectionBackground:'rgba(52,211,153,0.25)',black:'#0d2231',red:'#f87171',green:'#34d399',yellow:'#fbbf24',blue:'#38bdf8',magenta:'#818cf8',cyan:'#22d3ee',white:'#d1fae5',brightBlack:'#1e4060',brightRed:'#fca5a5',brightGreen:'#6ee7b7',brightYellow:'#fde68a',brightBlue:'#7dd3fc',brightMagenta:'#a5b4fc',brightCyan:'#67e8f9',brightWhite:'#ecfdf5' },
+    // Deep Sea — teal greens, coral reds, golden yellows, coral magentas
+    css: { '--bg':'rgba(4,12,20,0.85)', '--accent':'#34d399', '--accent2':'#059669', '--text':'#d1fae5', '--text-muted':'rgba(209,250,229,0.45)', '--danger':'#fb7185' },
+    terminal: { background:'transparent',foreground:'#d1fae5',cursor:'#34d399',cursorAccent:'#04111e',selectionBackground:'rgba(52,211,153,0.25)',black:'#0d2231',red:'#fb7185',green:'#2dd4bf',yellow:'#fcd34d',blue:'#38bdf8',magenta:'#f472b6',cyan:'#22d3ee',white:'#d1fae5',brightBlack:'#1e4060',brightRed:'#fda4af',brightGreen:'#5eead4',brightYellow:'#fde68a',brightBlue:'#7dd3fc',brightMagenta:'#f9a8d4',brightCyan:'#67e8f9',brightWhite:'#ecfdf5' },
   },
   crimson: {
+    // Ember — muted greens, amber yellows, indigo blues as cool contrast
     css: { '--bg':'rgba(20,4,4,0.85)', '--accent':'#f87171', '--accent2':'#dc2626', '--text':'#fee2e2', '--text-muted':'rgba(254,226,226,0.45)', '--danger':'#f87171' },
-    terminal: { background:'transparent',foreground:'#fee2e2',cursor:'#f87171',cursorAccent:'#140404',selectionBackground:'rgba(248,113,113,0.25)',black:'#2a0808',red:'#f87171',green:'#4ade80',yellow:'#facc15',blue:'#60a5fa',magenta:'#e879f9',cyan:'#34d399',white:'#fee2e2',brightBlack:'#571414',brightRed:'#fca5a5',brightGreen:'#86efac',brightYellow:'#fde047',brightBlue:'#93c5fd',brightMagenta:'#f0abfc',brightCyan:'#6ee7b7',brightWhite:'#fff1f2' },
+    terminal: { background:'transparent',foreground:'#fee2e2',cursor:'#f87171',cursorAccent:'#140404',selectionBackground:'rgba(248,113,113,0.25)',black:'#2a0808',red:'#f87171',green:'#86efac',yellow:'#fcd34d',blue:'#818cf8',magenta:'#f9a8d4',cyan:'#5eead4',white:'#fee2e2',brightBlack:'#571414',brightRed:'#fca5a5',brightGreen:'#bbf7d0',brightYellow:'#fef08a',brightBlue:'#a5b4fc',brightMagenta:'#fbcfe8',brightCyan:'#99f6e4',brightWhite:'#fff1f2' },
   },
   matrix: {
-    css: { '--bg':'rgba(0,8,0,0.90)', '--accent':'#00ff41', '--accent2':'#008f11', '--text':'#00ff41', '--text-muted':'rgba(0,255,65,0.45)', '--danger':'#ff0000' },
-    terminal: { background:'transparent',foreground:'#00ff41',cursor:'#00ff41',cursorAccent:'#000800',selectionBackground:'rgba(0,255,65,0.2)',black:'#001400',red:'#ff0000',green:'#00ff41',yellow:'#ffff00',blue:'#0041ff',magenta:'#ff00ff',cyan:'#00ffff',white:'#00ff41',brightBlack:'#003300',brightRed:'#ff4444',brightGreen:'#41ff41',brightYellow:'#ffff44',brightBlue:'#4444ff',brightMagenta:'#ff44ff',brightCyan:'#44ffff',brightWhite:'#ccffcc' },
+    // Phosphor — neon greens, chartreuse yellow, cyan-blue, neon pink
+    css: { '--bg':'rgba(0,8,0,0.90)', '--accent':'#00ff41', '--accent2':'#008f11', '--text':'#00ff41', '--text-muted':'rgba(0,255,65,0.45)', '--danger':'#ff3333' },
+    terminal: { background:'transparent',foreground:'#00ff41',cursor:'#00ff41',cursorAccent:'#000800',selectionBackground:'rgba(0,255,65,0.2)',black:'#001400',red:'#ff3333',green:'#00ff41',yellow:'#b8ff00',blue:'#00d4ff',magenta:'#ff00aa',cyan:'#00ffcc',white:'#ccffcc',brightBlack:'#005200',brightRed:'#ff6666',brightGreen:'#69ff47',brightYellow:'#d4ff00',brightBlue:'#44ddff',brightMagenta:'#ff44cc',brightCyan:'#44ffdd',brightWhite:'#eeffee' },
   },
   tokyo: {
+    // Tokyo Night — canonical colors, brights are noticeably lighter
     css: { '--bg':'rgba(13,17,33,0.88)', '--accent':'#7aa2f7', '--accent2':'#3d59a1', '--text':'#c0caf5', '--text-muted':'rgba(192,202,245,0.45)', '--danger':'#f7768e' },
-    terminal: { background:'transparent',foreground:'#c0caf5',cursor:'#7aa2f7',cursorAccent:'#0d1121',selectionBackground:'rgba(122,162,247,0.25)',black:'#15161e',red:'#f7768e',green:'#9ece6a',yellow:'#e0af68',blue:'#7aa2f7',magenta:'#bb9af7',cyan:'#7dcfff',white:'#a9b1d6',brightBlack:'#414868',brightRed:'#f7768e',brightGreen:'#9ece6a',brightYellow:'#e0af68',brightBlue:'#7aa2f7',brightMagenta:'#bb9af7',brightCyan:'#7dcfff',brightWhite:'#c0caf5' },
+    terminal: { background:'transparent',foreground:'#c0caf5',cursor:'#7aa2f7',cursorAccent:'#0d1121',selectionBackground:'rgba(122,162,247,0.25)',black:'#15161e',red:'#f7768e',green:'#9ece6a',yellow:'#e0af68',blue:'#7aa2f7',magenta:'#bb9af7',cyan:'#7dcfff',white:'#a9b1d6',brightBlack:'#414868',brightRed:'#ff899d',brightGreen:'#b9f27c',brightYellow:'#ffc777',brightBlue:'#82aaff',brightMagenta:'#c3a6ff',brightCyan:'#86e1fc',brightWhite:'#cdd6f4' },
   },
   catppuccin: {
+    // Catppuccin Mocha — canonical colors, brights are noticeably lighter
     css: { '--bg':'rgba(30,30,46,0.88)', '--accent':'#cba6f7', '--accent2':'#b4befe', '--text':'#cdd6f4', '--text-muted':'rgba(205,214,244,0.45)', '--danger':'#f38ba8' },
-    terminal: { background:'transparent',foreground:'#cdd6f4',cursor:'#cba6f7',cursorAccent:'#1e1e2e',selectionBackground:'rgba(203,166,247,0.25)',black:'#45475a',red:'#f38ba8',green:'#a6e3a1',yellow:'#f9e2af',blue:'#89b4fa',magenta:'#cba6f7',cyan:'#89dceb',white:'#bac2de',brightBlack:'#585b70',brightRed:'#f38ba8',brightGreen:'#a6e3a1',brightYellow:'#f9e2af',brightBlue:'#89b4fa',brightMagenta:'#cba6f7',brightCyan:'#89dceb',brightWhite:'#a6adc8' },
+    terminal: { background:'transparent',foreground:'#cdd6f4',cursor:'#cba6f7',cursorAccent:'#1e1e2e',selectionBackground:'rgba(203,166,247,0.25)',black:'#45475a',red:'#f38ba8',green:'#a6e3a1',yellow:'#f9e2af',blue:'#89b4fa',magenta:'#cba6f7',cyan:'#89dceb',white:'#bac2de',brightBlack:'#585b70',brightRed:'#f5a6b8',brightGreen:'#b8f0b3',brightYellow:'#fdecc0',brightBlue:'#9ec4ff',brightMagenta:'#d8baff',brightCyan:'#a0e8f3',brightWhite:'#cdd6f4' },
   },
   nord: {
+    // Nord — canonical aurora palette, brights are warmer/lighter
     css: { '--bg':'rgba(36,41,54,0.88)', '--accent':'#88c0d0', '--accent2':'#5e81ac', '--text':'#eceff4', '--text-muted':'rgba(236,239,244,0.45)', '--danger':'#bf616a' },
-    terminal: { background:'transparent',foreground:'#eceff4',cursor:'#88c0d0',cursorAccent:'#242936',selectionBackground:'rgba(136,192,208,0.25)',black:'#3b4252',red:'#bf616a',green:'#a3be8c',yellow:'#ebcb8b',blue:'#81a1c1',magenta:'#b48ead',cyan:'#88c0d0',white:'#e5e9f0',brightBlack:'#4c566a',brightRed:'#bf616a',brightGreen:'#a3be8c',brightYellow:'#ebcb8b',brightBlue:'#81a1c1',brightMagenta:'#b48ead',brightCyan:'#8fbcbb',brightWhite:'#eceff4' },
+    terminal: { background:'transparent',foreground:'#eceff4',cursor:'#88c0d0',cursorAccent:'#242936',selectionBackground:'rgba(136,192,208,0.25)',black:'#3b4252',red:'#bf616a',green:'#a3be8c',yellow:'#ebcb8b',blue:'#81a1c1',magenta:'#b48ead',cyan:'#88c0d0',white:'#e5e9f0',brightBlack:'#4c566a',brightRed:'#d07080',brightGreen:'#b5d19f',brightYellow:'#f0d9a0',brightBlue:'#91b4d5',brightMagenta:'#c9a8c3',brightCyan:'#9ecfce',brightWhite:'#eceff4' },
   },
   dracula: {
+    // Dracula — canonical, unchanged (already has good dim/bright separation)
     css: { '--bg':'rgba(40,42,54,0.88)', '--accent':'#bd93f9', '--accent2':'#6272a4', '--text':'#f8f8f2', '--text-muted':'rgba(248,248,242,0.45)', '--danger':'#ff5555' },
     terminal: { background:'transparent',foreground:'#f8f8f2',cursor:'#bd93f9',cursorAccent:'#282a36',selectionBackground:'rgba(189,147,249,0.25)',black:'#21222c',red:'#ff5555',green:'#50fa7b',yellow:'#f1fa8c',blue:'#bd93f9',magenta:'#ff79c6',cyan:'#8be9fd',white:'#f8f8f2',brightBlack:'#6272a4',brightRed:'#ff6e6e',brightGreen:'#69ff94',brightYellow:'#ffffa5',brightBlue:'#d6acff',brightMagenta:'#ff92df',brightCyan:'#a4ffff',brightWhite:'#ffffff' },
   },
 }
 
-let activeTheme = 'purple'
+let activeTheme = localStorage.getItem('theme') || 'purple'
 
 function applyTheme(name) {
   activeTheme = name
+  localStorage.setItem('theme', name)
   const t = THEMES[name]
   for (const [k, v] of Object.entries(t.css)) document.documentElement.style.setProperty(k, v)
   tabs.forEach(tab => { tab.term.options.theme = t.terminal })
@@ -199,7 +208,7 @@ function createTab(opts = {}) {
   el.dataset.tabId = id
   el.style.cssText = 'width:100%;height:100%;display:none'
 
-  const tab = { id, name, term, fitAddon, searchAddon, el, buffer: '', notifyTimer: null, startTime, isSplitTab, folder: opts.folder ?? null }
+  const tab = { id, name, term, fitAddon, searchAddon, el, buffer: '', notifyTimer: null, startTime, isSplitTab, folder: opts.folder ?? null, aiType: opts.aiType ?? 'none' }
   tabs.push(tab)
 
   term.onData(data => api.terminal.sendInput(id, data))
@@ -468,6 +477,7 @@ window.addEventListener('resize', refitAll)
 // ── Font size ─────────────────────────────────────────────────────────────
 function setFontSize(size) {
   fontSize = Math.min(24, Math.max(10, size))
+  localStorage.setItem('fontSize', fontSize)
   tabs.forEach(t => { t.term.options.fontSize = fontSize; t.fitAddon.fit() })
   document.getElementById('fontsize-slider').value = fontSize
   document.getElementById('fontsize-val').textContent = fontSize + 'px'
@@ -661,7 +671,7 @@ document.getElementById('ntp-open-btn').addEventListener('click', () => {
   const tabName = newTabAI !== 'none' ? (aiLabels[newTabAI] ?? newTabAI) : (shellLabels[newTabShell] ?? newTabShell)
   const skipPerms = document.getElementById('ntp-skip-perms').checked
 
-  const tab = createTab({ name: tabName, shellType: newTabShell, folder: newTabFolder || null })
+  const tab = createTab({ name: tabName, shellType: newTabShell, folder: newTabFolder || null, aiType: newTabAI })
   renderTabBar()
   switchTab(tab.id)
   ntpPanel.classList.add('hidden')
@@ -705,11 +715,13 @@ document.getElementById('settings-close').addEventListener('click', () => settin
 
 document.getElementById('opacity-slider').addEventListener('input', function () {
   document.getElementById('opacity-val').textContent = this.value + '%'
+  localStorage.setItem('opacity', this.value)
   api.window.setOpacity(parseInt(this.value) / 100)
 })
 document.getElementById('fontsize-slider').addEventListener('input', function () { setFontSize(parseInt(this.value)) })
 document.getElementById('autoscroll-toggle').addEventListener('change', e => {
   autoScroll = e.target.checked
+  localStorage.setItem('autoScroll', autoScroll)
   document.getElementById('ctx-autoscroll').textContent = `Auto-scroll: ${autoScroll ? 'on' : 'off'}`
 })
 document.getElementById('pin-toggle').addEventListener('change', e => {
@@ -717,7 +729,10 @@ document.getElementById('pin-toggle').addEventListener('change', e => {
   api.window.setAlwaysOnTop(isPinned)
   pinBtn.classList.toggle('active', isPinned)
 })
-document.getElementById('notify-toggle').addEventListener('change', e => { notificationsEnabled = e.target.checked })
+document.getElementById('notify-toggle').addEventListener('change', e => {
+  notificationsEnabled = e.target.checked
+  localStorage.setItem('notifications', notificationsEnabled)
+})
 document.getElementById('flowfield-toggle').addEventListener('change', e => { setFlowField(e.target.checked) })
 document.querySelectorAll('.theme-btn').forEach(btn => btn.addEventListener('click', () => applyTheme(btn.dataset.theme)))
 
@@ -781,7 +796,15 @@ document.getElementById('btn-load-ctx').addEventListener('click', async () => {
   if (!folder) return
   const ctx = await api.context.read(folder)
   if (!ctx) return
-  api.terminal.sendInput(tab.id, `Read AI_CONTEXT.md — it has context from previous sessions in this project.\r`)
+  if (tab.aiType !== 'none') {
+    // AI session: paste the file content into the input buffer (no \r — user sends it)
+    api.terminal.sendInput(tab.id, ctx)
+  } else {
+    // Shell session: run cat to print the file
+    const safePath = folder.replace(/"/g, '\\"')
+    api.terminal.sendInput(tab.id, `cat "${safePath}/AI_CONTEXT.md"\r`)
+  }
+  tab.term.focus()
 })
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────
@@ -796,7 +819,22 @@ document.addEventListener('keydown', e => {
 })
 
 // ── Init ─────────────────────────────────────────────────────────────────
-applyTheme('purple')
+applyTheme(localStorage.getItem('theme') || 'purple')
+
+// Restore persisted settings
+const savedOpacity = parseInt(localStorage.getItem('opacity') || '92')
+document.getElementById('opacity-slider').value = savedOpacity
+document.getElementById('opacity-val').textContent = savedOpacity + '%'
+api.window.setOpacity(savedOpacity / 100)
+
+document.getElementById('fontsize-slider').value = fontSize
+document.getElementById('fontsize-val').textContent = fontSize + 'px'
+
+document.getElementById('autoscroll-toggle').checked = autoScroll
+document.getElementById('ctx-autoscroll').textContent = `Auto-scroll: ${autoScroll ? 'on' : 'off'}`
+
+document.getElementById('notify-toggle').checked = notificationsEnabled
+
 const firstTab = createTab({ name: 'Session 1' })
 renderTabBar()
 switchTab(firstTab.id)
