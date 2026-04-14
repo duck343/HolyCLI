@@ -63,6 +63,83 @@ function applyTheme(name) {
   document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === name))
 }
 
+// ── Flow Field Background ─────────────────────────────────────────────────
+let flowEnabled = JSON.parse(localStorage.getItem('flowField') || 'false')
+let flowAnimId = null
+let flowParticles = []
+let flowW = 0, flowH = 0
+let flowCtx = null
+
+function flowGetColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a78bfa'
+}
+
+function flowResize() {
+  const canvas = document.getElementById('flow-canvas')
+  if (!canvas) return
+  const dpr = window.devicePixelRatio || 1
+  flowW = canvas.offsetWidth
+  flowH = canvas.offsetHeight
+  canvas.width = flowW * dpr
+  canvas.height = flowH * dpr
+  flowCtx = canvas.getContext('2d')
+  flowCtx.scale(dpr, dpr)
+  flowParticles = []
+  for (let i = 0; i < 400; i++) {
+    flowParticles.push({
+      x: Math.random() * flowW, y: Math.random() * flowH,
+      vx: 0, vy: 0, age: 0,
+      life: Math.random() * 200 + 100
+    })
+  }
+}
+
+function flowAnimate() {
+  if (!flowEnabled || !flowCtx) return
+  flowCtx.fillStyle = 'rgba(0,0,0,0.12)'
+  flowCtx.fillRect(0, 0, flowW, flowH)
+  const color = flowGetColor()
+  for (const p of flowParticles) {
+    const angle = (Math.cos(p.x * 0.005) + Math.sin(p.y * 0.005)) * Math.PI
+    p.vx += Math.cos(angle) * 0.2
+    p.vy += Math.sin(angle) * 0.2
+    p.x += p.vx; p.y += p.vy
+    p.vx *= 0.95; p.vy *= 0.95
+    p.age++
+    if (p.age > p.life) {
+      p.x = Math.random() * flowW; p.y = Math.random() * flowH
+      p.vx = 0; p.vy = 0; p.age = 0
+      p.life = Math.random() * 200 + 100
+    }
+    if (p.x < 0) p.x = flowW; if (p.x > flowW) p.x = 0
+    if (p.y < 0) p.y = flowH; if (p.y > flowH) p.y = 0
+    const alpha = (1 - Math.abs((p.age / p.life) - 0.5) * 2) * 0.55
+    flowCtx.globalAlpha = alpha
+    flowCtx.fillStyle = color
+    flowCtx.fillRect(p.x, p.y, 1.5, 1.5)
+  }
+  flowCtx.globalAlpha = 1
+  flowAnimId = requestAnimationFrame(flowAnimate)
+}
+
+function setFlowField(enabled) {
+  flowEnabled = enabled
+  localStorage.setItem('flowField', JSON.stringify(enabled))
+  const canvas = document.getElementById('flow-canvas')
+  if (!canvas) return
+  if (enabled) {
+    flowResize()
+    canvas.classList.add('active')
+    flowAnimate()
+  } else {
+    canvas.classList.remove('active')
+    if (flowAnimId) { cancelAnimationFrame(flowAnimId); flowAnimId = null }
+    if (flowCtx) flowCtx.clearRect(0, 0, flowW, flowH)
+  }
+}
+
+window.addEventListener('resize', () => { if (flowEnabled) flowResize() })
+
 // ── ANSI strip ───────────────────────────────────────────────────────────
 function stripAnsi(s) {
   return s
@@ -128,13 +205,15 @@ function createTab(opts = {}) {
   term.onData(data => api.terminal.sendInput(id, data))
 
   term.attachCustomKeyEventHandler(e => {
+    if (e.ctrlKey && e.key === 'v') {
+      if (e.type === 'keydown') {
+        navigator.clipboard.readText().then(t => term.paste(t))
+      }
+      return false
+    }
+    if (e.type !== 'keydown') return true
     if (e.ctrlKey && e.key === 'c' && term.hasSelection()) {
       navigator.clipboard.writeText(term.getSelection()); return false
-    }
-    if (e.ctrlKey && e.key === 'v') {
-      e.preventDefault()
-      navigator.clipboard.readText().then(t => api.terminal.sendInput(id, t))
-      return false
     }
     return true
   })
@@ -147,6 +226,8 @@ function createTab(opts = {}) {
     document.getElementById('terminal-pane-main').appendChild(el)
     term.open(el)
   }
+
+  term.element.addEventListener('paste', e => { e.preventDefault(); e.stopPropagation() }, true)
 
   api.terminal.create(id, opts.shellType ?? 'powershell')
   return tab
@@ -440,8 +521,9 @@ document.getElementById('ctx-copy').addEventListener('click', () => {
 })
 document.getElementById('ctx-paste').addEventListener('click', async () => {
   const text = await navigator.clipboard.readText()
-  if (activeTabId) api.terminal.sendInput(activeTabId, text)
-  getActiveTab()?.term.focus()
+  const activeTab = getActiveTab()
+  if (activeTab) activeTab.term.paste(text)
+  activeTab?.term.focus()
   hideCtx()
 })
 document.getElementById('ctx-select-all').addEventListener('click', () => { getActiveTab()?.term.selectAll(); hideCtx() })
@@ -636,6 +718,7 @@ document.getElementById('pin-toggle').addEventListener('change', e => {
   pinBtn.classList.toggle('active', isPinned)
 })
 document.getElementById('notify-toggle').addEventListener('change', e => { notificationsEnabled = e.target.checked })
+document.getElementById('flowfield-toggle').addEventListener('change', e => { setFlowField(e.target.checked) })
 document.querySelectorAll('.theme-btn').forEach(btn => btn.addEventListener('click', () => applyTheme(btn.dataset.theme)))
 
 // ── Save Context Panel ────────────────────────────────────────────────────
@@ -717,3 +800,11 @@ applyTheme('purple')
 const firstTab = createTab({ name: 'Session 1' })
 renderTabBar()
 switchTab(firstTab.id)
+
+// Restore flow field state — idle-deferred so it never blocks startup
+if (flowEnabled) {
+  document.getElementById('flowfield-toggle').checked = true
+  const start = () => setFlowField(true)
+  if (typeof requestIdleCallback !== 'undefined') requestIdleCallback(start, { timeout: 1500 })
+  else setTimeout(start, 0)
+}

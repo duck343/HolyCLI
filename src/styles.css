@@ -1,7 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: rgba(10, 8, 20, 0.82);
+  --bg: rgba(10, 8, 20, 1);
   --glass: rgba(255, 255, 255, 0.04);
   --glass-border: rgba(255, 255, 255, 0.08);
   --accent: #a78bfa;
@@ -14,15 +14,13 @@
   --tabbar-h: 34px;
 }
 
-html, body { background: transparent; overflow: hidden; height: 100%; width: 100%; font-family: 'Segoe UI', system-ui, sans-serif; }
+html, body { background: #0a0814; overflow: hidden; height: 100%; width: 100%; font-family: 'Segoe UI', system-ui, sans-serif; }
 .hidden { display: none !important; }
 
 #app {
   display: flex; flex-direction: column; height: 100vh;
-  background: var(--bg); border-radius: var(--radius);
+  background: var(--bg);
   border: 1px solid var(--glass-border); overflow: hidden;
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
   box-shadow: 0 0 0 1px rgba(167,139,250,0.12), 0 32px 80px rgba(0,0,0,0.7), 0 0 60px rgba(124,58,237,0.08) inset;
   position: relative;
 }
@@ -95,7 +93,8 @@ button#btn-pin.active { color: var(--accent) !important; }
 /* ── Find bar ─────────────────────────────────────────────────────────── */
 #find-bar {
   display: flex; align-items: center; gap: 6px; padding: 6px 12px;
-  background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--glass-border); flex-shrink: 0;
+  background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0; position: relative; z-index: 5;
 }
 #find-bar.hidden { display: none; }
 #find-input {
@@ -115,7 +114,7 @@ button#btn-pin.active { color: var(--accent) !important; }
 #tab-bar {
   display: flex; align-items: center; height: var(--tabbar-h);
   background: rgba(0,0,0,0.18); border-bottom: 1px solid var(--glass-border);
-  flex-shrink: 0;
+  flex-shrink: 0; position: relative; z-index: 5;
 }
 
 #tab-list { display: flex; align-items: stretch; flex: 1; overflow-x: auto; scrollbar-width: none; }
@@ -180,6 +179,14 @@ canvas.xterm-text-layer, canvas.xterm-selection-layer, canvas.xterm-link-layer {
 .xterm-viewport::-webkit-scrollbar-track { background: transparent; }
 .xterm-viewport::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.25); border-radius: 3px; }
 .xterm-viewport::-webkit-scrollbar-thumb:hover { background: rgba(167,139,250,0.45); }
+
+/* ── Flow field canvas ────────────────────────────────────────────────── */
+#flow-canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+  opacity: 0; transition: opacity 0.6s ease;
+}
+#flow-canvas.active { opacity: 1; }
 
 /* ── Settings panel ───────────────────────────────────────────────────── */
 #settings-panel {
@@ -440,3 +447,56 @@ canvas.xterm-text-layer, canvas.xterm-selection-layer, canvas.xterm-link-layer {
   margin-top: 2px; font-family: inherit;
 }
 #ntp-open-btn:hover { background: rgba(167,139,250,0.28); }
+
+/* ── Lever switch ──────────────────────────────────────────────────────── */
+.lever-switch {
+  position: relative; width: 40px; height: 30px; flex-shrink: 0; cursor: pointer;
+}
+.lever-switch input {
+  position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%;
+  cursor: pointer; z-index: 2; margin: 0;
+}
+/* Base oval */
+.lever-base {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%) translateY(-2px);
+  width: 28px; height: 11px; border-radius: 6px;
+  background: rgba(255,255,255,0.07); border: 1px solid var(--glass-border);
+  transition: background 0.25s, border-color 0.25s;
+}
+.lever-base-inside {
+  position: absolute; inset: 2px; border-radius: 3px; background: rgba(0,0,0,0.25);
+}
+/* Handle pivot — rotates with a subtle dip on toggle */
+.lever-handle-wrap {
+  position: absolute; bottom: 5px; left: 50%;
+  transform-origin: 0% 100%;
+  transform: translateX(-50%) rotate(-28deg) translateY(0px);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+.lever-switch input:checked ~ .lever-handle-wrap {
+  transform: translateX(-50%) rotate(28deg) translateY(-4px);
+}
+.lever-switch input:checked ~ .lever-base {
+  background: rgba(167,139,250,0.2); border-color: var(--accent);
+}
+/* Knob */
+.lever-knob {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.55), var(--text-muted));
+  border: 1px solid rgba(255,255,255,0.25);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  transition: background 0.25s, box-shadow 0.25s;
+  margin: 0 auto;
+}
+.lever-switch input:checked ~ .lever-handle-wrap .lever-knob {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: 0 0 8px rgba(167,139,250,0.6), 0 1px 4px rgba(0,0,0,0.4);
+}
+/* Bar shaft */
+.lever-bar-wrap { width: 3px; height: 14px; margin: 0 auto; }
+.lever-bar {
+  width: 3px; height: 14px; border-radius: 1.5px;
+  background: var(--text-muted); transition: background 0.25s;
+}
+.lever-switch input:checked ~ .lever-handle-wrap .lever-bar { background: var(--accent); }

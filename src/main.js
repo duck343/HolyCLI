@@ -11,8 +11,8 @@ const ptyProcesses = new Map() // tabId -> ptyProcess
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 900, height: 650, minWidth: 500, minHeight: 350,
-    frame: false, transparent: true, backgroundColor: '#00000000',
-    hasShadow: true, vibrancy: 'under-window', visualEffectState: 'active',
+    frame: false, backgroundColor: '#0a0814',
+    hasShadow: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true, nodeIntegration: false,
@@ -29,7 +29,7 @@ function createWindow() {
 }
 
 function createTray() {
-  const img = nativeImage.createEmpty()
+  const img = nativeImage.createFromPath(path.join(__dirname, '../assets/icon.png')).resize({ width: 16, height: 16 })
   tray = new Tray(img)
   tray.setToolTip('Holy CLI')
   const menu = Menu.buildFromTemplate([
@@ -44,7 +44,7 @@ function createTray() {
   tray.on('double-click', () => mainWindow?.show())
 }
 
-app.whenReady().then(() => { createWindow(); createTray() })
+app.whenReady().then(() => { Menu.setApplicationMenu(null); createWindow(); createTray() })
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
 
 function createPty(tabId, shellType = 'powershell') {

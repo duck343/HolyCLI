@@ -14,14 +14,14 @@
 <body>
   <div id="app">
 
+    <!-- Flow field canvas (background layer) -->
+    <canvas id="flow-canvas"></canvas>
+
     <!-- Titlebar -->
     <div id="titlebar">
       <div id="drag-region">
         <div id="app-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="#a78bfa" stroke-width="1.5"/>
-            <path d="M8 12h8M12 8l4 4-4 4" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <img src="../assets/icon.png" width="16" height="16" style="object-fit:contain;"/>
         </div>
         <span id="app-title">Holy CLI</span>
         <div id="status-dot"></div>
@@ -154,6 +154,19 @@
         <label class="row">
           <span>Notifications</span>
           <input type="checkbox" id="notify-toggle" checked />
+        </label>
+        <label class="row">
+          <span>...</span>
+          <div class="lever-switch">
+            <input type="checkbox" id="flowfield-toggle" />
+            <div class="lever-handle-wrap">
+              <div class="lever-handle">
+                <div class="lever-knob"></div>
+                <div class="lever-bar-wrap"><div class="lever-bar"></div></div>
+              </div>
+            </div>
+            <div class="lever-base"><div class="lever-base-inside"></div></div>
+          </div>
         </label>
         <div id="theme-section">
           <div class="theme-label">Theme</div>
