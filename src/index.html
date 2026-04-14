@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Chat</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-web-links@0.11.0/lib/addon-web-links.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-search@0.15.0/lib/addon-search.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+
+    <div id="titlebar">
+      <div id="drag-region">
+        <div id="app-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#a78bfa" stroke-width="1.5"/>
+            <path d="M8 12h8M12 8l4 4-4 4" stroke="#a78bfa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span id="app-title">Claude Chat</span>
+        <div id="status-dot"></div>
+      </div>
+
+      <div id="titlebar-controls">
+        <button id="btn-font-down" title="Decrease font size">A-</button>
+        <span id="font-size-display">14</span>
+        <button id="btn-font-up" title="Increase font size">A+</button>
+        <div class="sep"></div>
+        <button id="btn-settings" title="Settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button id="btn-pin" title="Always on top">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2l2.4 6.4H21l-5.4 4 2 6.4L12 15l-5.6 3.8 2-6.4L3 8.4h6.6L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="sep"></div>
+        <button id="btn-find" title="Find (Ctrl+F)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/>
+            <path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="sep"></div>
+        <button id="btn-minimize" class="wc" title="Minimize">
+          <svg width="10" height="2" viewBox="0 0 10 2"><rect width="10" height="2" rx="1" fill="currentColor"/></svg>
+        </button>
+        <button id="btn-maximize" class="wc" title="Maximize">
+          <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+        </button>
+        <button id="btn-close" class="wc close" title="Close">
+          <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="find-bar" class="hidden">
+      <input id="find-input" type="text" placeholder="Find in terminal..." autocomplete="off" />
+      <button id="find-prev">↑</button>
+      <button id="find-next">↓</button>
+      <button id="find-close">✕</button>
+    </div>
+
+    <div id="terminal-container">
+      <div id="terminal"></div>
+    </div>
+
+    <div id="settings-panel" class="hidden">
+      <div id="settings-inner">
+        <h3>Settings</h3>
+        <label>
+          Window opacity
+          <input type="range" id="opacity-slider" min="20" max="100" value="92" />
+          <span id="opacity-val">92%</span>
+        </label>
+        <label>
+          Font size
+          <input type="range" id="fontsize-slider" min="10" max="24" value="14" />
+          <span id="fontsize-val">14px</span>
+        </label>
+        <label class="row">
+          <span>Auto-scroll</span>
+          <input type="checkbox" id="autoscroll-toggle" checked />
+        </label>
+        <label class="row">
+          <span>Always on top</span>
+          <input type="checkbox" id="pin-toggle" />
+        </label>
+        <button id="settings-close">Close</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="context-menu" class="hidden">
+    <ul>
+      <li id="ctx-copy">Copy</li>
+      <li id="ctx-paste">Paste</li>
+      <li id="ctx-select-all">Select All</li>
+      <li class="divider"></li>
+      <li id="ctx-clear">Clear</li>
+      <li id="ctx-autoscroll">Auto-scroll: on</li>
+    </ul>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
