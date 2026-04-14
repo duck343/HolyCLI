@@ -3,24 +3,61 @@ const path = require('path')
 const os = require('os')
 const fs = require('fs')
 
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache')
+app.setAppUserModelId('com.holycli.app')
+
 let mainWindow
+let splash
+let splashReadyAt = 0
 let tray
 const ptyProcesses = new Map() // tabId -> ptyProcess
 
+// Require node-pty once at startup so it's ready when needed
+let pty
+try { pty = require('node-pty') } catch (e) { console.error('node-pty failed to load:', e.message) }
+
+// Pre-spawn the default shell immediately so it's ready when the renderer asks
+let preSpawnedPty = null
+function preSpawn() {
+  if (!pty) return
+  try {
+    preSpawnedPty = pty.spawn('powershell.exe', ['-NoLogo', '-NoProfile'], {
+      name: 'xterm-256color', cols: 100, rows: 30,
+      cwd: os.homedir(), env: { ...process.env, TERM: 'xterm-256color' },
+    })
+  } catch (e) { console.error('pre-spawn failed:', e.message) }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 900, height: 650, minWidth: 500, minHeight: 350,
     frame: false, backgroundColor: '#0a0814',
-    hasShadow: true,
+    hasShadow: true, show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true, nodeIntegration: false,
     },
-    icon: path.join(__dirname, '../assets/icon.png'),
+    icon: path.join(__dirname, '../assets/icon.ico'),
     title: 'Holy CLI', resizable: true, alwaysOnTop: false,
   })
   mainWindow.loadFile(path.join(__dirname, 'index.html'))
+  mainWindow.once('ready-to-show', () => {
+    const MIN_SPLASH_MS = 1500
+    const elapsed = splashReadyAt ? Date.now() - splashReadyAt : MIN_SPLASH_MS
+    const delay = Math.max(0, MIN_SPLASH_MS - elapsed)
+    setTimeout(() => {
+      mainWindow.show()
+      if (splash && !splash.isDestroyed()) { splash.close(); splash = null }
+    }, delay)
+  })
+  mainWindow.on('close', e => {
+    e.preventDefault()
+    if (!mainWindow.isVisible()) {
+      mainWindow.setPosition(16, 16)
+      mainWindow.show()
+    }
+    mainWindow.webContents.send('window:close-requested')
+  })
   mainWindow.on('closed', () => {
     for (const [, proc] of ptyProcesses) proc.kill()
     ptyProcesses.clear()
@@ -29,7 +66,7 @@ function createWindow() {
 }
 
 function createTray() {
-  const img = nativeImage.createFromPath(path.join(__dirname, '../assets/icon.png')).resize({ width: 16, height: 16 })
+  const img = nativeImage.createFromPath(path.join(__dirname, '../assets/icon.ico'))
   tray = new Tray(img)
   tray.setToolTip('Holy CLI')
   const menu = Menu.buildFromTemplate([
@@ -38,29 +75,51 @@ function createTray() {
     { type: 'separator' },
     { label: 'Always on Top', type: 'checkbox', checked: false, click: i => mainWindow?.setAlwaysOnTop(i.checked) },
     { type: 'separator' },
-    { label: 'Quit', click: () => app.quit() },
+    { label: 'Quit', click: () => mainWindow?.close() },
   ])
   tray.setContextMenu(menu)
   tray.on('double-click', () => mainWindow?.show())
 }
 
-app.whenReady().then(() => { Menu.setApplicationMenu(null); createWindow(); createTray() })
+app.whenReady().then(() => {
+  Menu.setApplicationMenu(null)
+
+  // Splash — show immediately so it appears as fast as possible
+  splash = new BrowserWindow({
+    width: 300, height: 220, frame: false, backgroundColor: '#0a0814',
+    alwaysOnTop: true, resizable: false, center: true, skipTaskbar: true,
+    show: true,
+    webPreferences: { nodeIntegration: false, contextIsolation: true },
+  })
+  splash.loadFile(path.join(__dirname, 'splash.html'))
+  splashReadyAt = Date.now()
+
+  preSpawn()
+  createWindow()
+  createTray()
+})
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
 
 function createPty(tabId, shellType = 'powershell') {
+  if (!pty) return
   try {
-    const pty = require('node-pty')
-    let shell, shellArgs
-    if (process.platform === 'win32') {
-      if (shellType === 'cmd') { shell = 'cmd.exe'; shellArgs = [] }
-      else if (shellType === 'gitbash') { shell = 'C:\\Program Files\\Git\\bin\\bash.exe'; shellArgs = ['--login', '-i'] }
-      else if (shellType === 'wsl') { shell = 'wsl.exe'; shellArgs = [] }
-      else { shell = 'powershell.exe'; shellArgs = ['-NoLogo'] }
-    } else { shell = 'bash'; shellArgs = [] }
-    const proc = pty.spawn(shell, shellArgs, {
-      name: 'xterm-256color', cols: 100, rows: 30,
-      cwd: os.homedir(), env: { ...process.env, TERM: 'xterm-256color' },
-    })
+    let proc
+    if (shellType === 'powershell' && preSpawnedPty) {
+      proc = preSpawnedPty
+      preSpawnedPty = null
+    } else {
+      let shell, shellArgs
+      if (process.platform === 'win32') {
+        if (shellType === 'cmd') { shell = 'cmd.exe'; shellArgs = [] }
+        else if (shellType === 'gitbash') { shell = 'C:\\Program Files\\Git\\bin\\bash.exe'; shellArgs = ['--login', '-i'] }
+        else if (shellType === 'wsl') { shell = 'wsl.exe'; shellArgs = [] }
+        else { shell = 'powershell.exe'; shellArgs = ['-NoLogo', '-NoProfile'] }
+      } else { shell = 'bash'; shellArgs = [] }
+      proc = pty.spawn(shell, shellArgs, {
+        name: 'xterm-256color', cols: 100, rows: 30,
+        cwd: os.homedir(), env: { ...process.env, TERM: 'xterm-256color' },
+      })
+    }
     proc.onData(data => mainWindow?.webContents.send('terminal:data', tabId, data))
     proc.onExit(() => mainWindow?.webContents.send('terminal:exit', tabId))
     ptyProcesses.set(tabId, proc)
@@ -101,13 +160,35 @@ ipcMain.handle('dialog:pickFolder', async () => {
   return result.canceled ? null : result.filePaths[0]
 })
 
+ipcMain.handle('dialog:confirm', async (_e, message) => {
+  const { response } = await dialog.showMessageBox(mainWindow, {
+    type: 'question', title: 'Holy CLI',
+    buttons: ['Yes', 'Cancel'], defaultId: 1, cancelId: 1,
+    message,
+  })
+  return response === 0
+})
+
 ipcMain.on('notify', (_e, { title, body }) => {
   if (Notification.isSupported()) new Notification({ title, body }).show()
 })
 
 ipcMain.on('window:minimize', () => mainWindow?.minimize())
 ipcMain.on('window:maximize', () => { if (mainWindow?.isMaximized()) mainWindow.unmaximize(); else mainWindow?.maximize() })
-ipcMain.on('window:close', () => mainWindow?.close())
+ipcMain.on('window:force-close', () => mainWindow?.destroy())
 ipcMain.on('window:alwaysOnTop', (_e, val) => mainWindow?.setAlwaysOnTop(val))
 ipcMain.on('window:opacity', (_e, val) => mainWindow?.setOpacity(val))
 ipcMain.handle('window:isAlwaysOnTop', () => mainWindow?.isAlwaysOnTop() ?? false)
+
+ipcMain.handle('system:cpuPercent', () => new Promise(resolve => {
+  const cpus1 = os.cpus()
+  setTimeout(() => {
+    const cpus2 = os.cpus()
+    let idle = 0, total = 0
+    cpus1.forEach((cpu, i) => {
+      for (const t in cpus2[i].times) total += cpus2[i].times[t] - cpu.times[t]
+      idle += cpus2[i].times.idle - cpu.times.idle
+    })
+    resolve(Math.round(100 - (idle / total * 100)))
+  }, 400)
+}))

@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Holy CLI</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-web-links@0.11.0/lib/addon-web-links.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-search@0.15.0/lib/addon-search.js"></script>
+  <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css" />
+  <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="../node_modules/@xterm/addon-web-links/lib/addon-web-links.js"></script>
+  <script src="../node_modules/@xterm/addon-search/lib/addon-search.js"></script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -29,61 +29,17 @@
 
       <div id="titlebar-controls">
 
-        <!-- Save context -->
-        <div id="save-btn-wrap" class="tb-wrap">
-          <button id="btn-save-ctx" title="Save AI context file">
+        <!-- Unified command panel -->
+        <div id="cmd-btn-wrap" class="tb-wrap">
+          <button id="btn-command" title="Commands (Ctrl+K)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-              <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-              <polyline points="7 3 7 8 15 8" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M6 8l-4 4 4 4M18 8l4 4-4 4M14 4l-4 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <span class="tb-label">Save</span>
           </button>
-          <div id="save-ctx-panel" class="hidden">
-            <div class="save-ctx-title">Save AI context</div>
-            <div id="save-ctx-folder-row">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-              <span id="save-ctx-folder-label">No folder selected</span>
-            </div>
-            <textarea id="save-ctx-note" placeholder="Optional note for other AIs..." rows="3"></textarea>
-            <button id="save-ctx-btn">Save AI_CONTEXT.md</button>
-            <div id="save-ctx-status" class="hidden"></div>
-          </div>
         </div>
 
-        <!-- Load context -->
-        <button id="btn-load-ctx" title="Send AI context prompt to active terminal">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2v10m0 0l-3-3m3 3l3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          <span class="tb-label">Load ctx</span>
-        </button>
-
         <div class="sep"></div>
 
-        <!-- Utility -->
-        <button id="btn-split" title="Split view">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <rect x="2" y="3" width="9" height="18" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-            <rect x="13" y="3" width="9" height="18" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-        </button>
-        <button id="btn-find" title="Find (Ctrl+F)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/>
-            <path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </button>
-
-        <div class="sep"></div>
-
-        <button id="btn-settings" title="Settings">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
-            <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </button>
         <button id="btn-pin" title="Always on top">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
             <path d="M12 2l2.4 6.4H21l-5.4 4 2 6.4L12 15l-5.6 3.8 2-6.4L3 8.4h6.6L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
@@ -123,70 +79,378 @@
     <!-- Terminal area -->
     <div id="main-area">
       <div id="terminal-area">
+        <canvas id="bg-canvas"></canvas>
         <div id="terminal-pane-main"></div>
         <div id="split-resizer" class="hidden"></div>
         <div id="terminal-pane-split" class="hidden"></div>
         <canvas id="game-canvas"></canvas>
+        <div id="skeleton">
+          <div class="sk-line" style="width:38%"></div>
+          <div class="sk-line" style="width:61%"></div>
+          <div class="sk-line" style="width:24%"></div>
+          <div class="sk-gap"></div>
+          <div class="sk-line" style="width:54%"></div>
+          <div class="sk-line" style="width:42%"></div>
+          <div class="sk-line" style="width:70%"></div>
+          <div class="sk-gap"></div>
+          <div class="sk-line sk-cursor" style="width:12px"></div>
+        </div>
       </div>
     </div>
 
     <!-- Settings panel -->
     <div id="settings-panel" class="hidden">
-      <div id="settings-inner">
-        <h3>Settings</h3>
-        <label>
-          Window opacity
-          <input type="range" id="opacity-slider" min="20" max="100" value="92" />
-          <span id="opacity-val">92%</span>
-        </label>
-        <label>
-          Font size
-          <input type="range" id="fontsize-slider" min="10" max="24" value="14" />
-          <span id="fontsize-val">14px</span>
-        </label>
-        <label class="row">
-          <span>Auto-scroll</span>
-          <input type="checkbox" id="autoscroll-toggle" checked />
-        </label>
-        <label class="row">
-          <span>Always on top</span>
-          <input type="checkbox" id="pin-toggle" />
-        </label>
-        <label class="row">
-          <span>Notifications</span>
-          <input type="checkbox" id="notify-toggle" checked />
-        </label>
-        <label class="row">
-          <span>Mini game</span>
-          <input type="checkbox" id="minigame-toggle" />
-        </label>
-        <label class="row">
-          <span>Flow field</span>
-          <div class="lever-switch">
-            <input type="checkbox" id="flowfield-toggle" />
-            <div class="lever-handle-wrap">
-              <div class="lever-handle">
-                <div class="lever-knob"></div>
-                <div class="lever-bar-wrap"><div class="lever-bar"></div></div>
-              </div>
-            </div>
-            <div class="lever-base"><div class="lever-base-inside"></div></div>
-          </div>
-        </label>
-        <div id="theme-section">
-          <div class="theme-label">Theme</div>
-          <div id="theme-buttons">
-            <button class="theme-btn active" data-theme="purple">Purple</button>
-            <button class="theme-btn" data-theme="ocean">Ocean</button>
-            <button class="theme-btn" data-theme="crimson">Crimson</button>
-            <button class="theme-btn" data-theme="matrix">Matrix</button>
-            <button class="theme-btn" data-theme="tokyo">Tokyo</button>
-            <button class="theme-btn" data-theme="catppuccin">Catppuccin</button>
-            <button class="theme-btn" data-theme="nord">Nord</button>
-            <button class="theme-btn" data-theme="dracula">Dracula</button>
+      <div id="settings-modal">
+
+        <!-- Sidebar -->
+        <div id="settings-sidebar">
+          <div id="settings-sidebar-title">Settings</div>
+          <nav id="settings-nav">
+            <div id="snav-pill"></div>
+            <button class="snav-item active" data-section="appearance">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z" stroke="currentColor" stroke-width="1.5"/><circle cx="6.5" cy="11.5" r="1" fill="currentColor"/><circle cx="9.5" cy="7.5" r="1" fill="currentColor"/><circle cx="14.5" cy="7.5" r="1" fill="currentColor"/></svg>
+              Appearance
+            </button>
+            <button class="snav-item" data-section="behavior">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 13h7l-1 9 9.5-11.5H13L13 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+              Behavior
+            </button>
+            <button class="snav-item" data-section="background">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 8h20M8 8v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="15" cy="15" r="3" stroke="currentColor" stroke-width="1.5"/></svg>
+              Background
+            </button>
+            <button class="snav-item" data-section="extras">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2v4m0 12v4M2 12h4m12 0h4m-3.3-6.7-2.8 2.8M8.1 15.9l-2.8 2.8m0-14.4 2.8 2.8m9.8 9.8-2.8-2.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Extras
+            </button>
+          </nav>
+          <div id="settings-sidebar-footer">
+            <div id="sidebar-ver-dot"></div>
+            <span id="sidebar-ver">Holy CLI v1.0.3</span>
           </div>
         </div>
-        <button id="settings-close">Close</button>
+
+        <!-- Content -->
+        <div id="settings-content">
+          <div id="settings-content-header">
+            <span id="settings-page-title">Appearance</span>
+            <button id="settings-close" title="Close (Esc)">
+              <svg width="11" height="11" viewBox="0 0 11 11"><path d="M1 1l9 9M10 1L1 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+
+          <!-- Appearance -->
+          <div class="settings-page active" data-section="appearance">
+
+            <div class="sgroup">
+              <div class="srow">
+                <div class="srow-info">
+                  <div class="srow-label">Color theme</div>
+                  <div class="srow-desc">Accent palette for the entire app</div>
+                </div>
+                <div class="srow-control srow-control-col">
+                  <div id="theme-buttons">
+                    <button class="theme-btn active" data-theme="purple" style="--btn-accent:#a78bfa">Purple</button>
+                    <button class="theme-btn" data-theme="ocean"      style="--btn-accent:#34d399">Ocean</button>
+                    <button class="theme-btn" data-theme="crimson"    style="--btn-accent:#f87171">Crimson</button>
+                    <button class="theme-btn" data-theme="matrix"     style="--btn-accent:#00ff41">Matrix</button>
+                    <button class="theme-btn" data-theme="tokyo"      style="--btn-accent:#7aa2f7">Tokyo</button>
+                    <button class="theme-btn" data-theme="catppuccin" style="--btn-accent:#cba6f7">Catppuccin</button>
+                    <button class="theme-btn" data-theme="nord"       style="--btn-accent:#88c0d0">Nord</button>
+                    <button class="theme-btn" data-theme="dracula"    style="--btn-accent:#bd93f9">Dracula</button>
+                  </div>
+                  <div id="theme-preview">
+                    <span id="theme-preview-prompt">~/holy-cli</span><span id="theme-preview-cmd"> $ npm run dev</span>
+                    <br><span id="theme-preview-ok">  ✓ ready in 312ms</span>
+                    <br><span id="theme-preview-muted">  &gt; listening on </span><span id="theme-preview-accent">localhost:3000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sgroup">
+              <div class="srow">
+                <div class="srow-info">
+                  <div class="srow-label">Window opacity</div>
+                  <div class="srow-desc">Background transparency level</div>
+                </div>
+                <div class="srow-control srow-slider-wrap">
+                  <input type="range" id="opacity-slider" min="20" max="100" value="92" />
+                  <span id="opacity-val">92%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="sgroup">
+              <div class="srow">
+                <div class="srow-info">
+                  <div class="srow-label">Font family</div>
+                  <div class="srow-desc">Terminal typeface</div>
+                </div>
+                <div class="srow-control srow-control-col">
+                  <div id="font-buttons"></div>
+                </div>
+              </div>
+              <div class="srow">
+                <div class="srow-info">
+                  <div class="srow-label">Font size</div>
+                  <div class="srow-desc">Terminal text size</div>
+                </div>
+                <div class="srow-control srow-control-col">
+                  <div class="srow-slider-wrap">
+                    <input type="range" id="fontsize-slider" min="10" max="24" value="14" />
+                    <span id="fontsize-val">14px</span>
+                  </div>
+                  <div id="font-preview">AaBbCc 0123 $ ls -la</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Behavior -->
+          <div class="settings-page" data-section="behavior">
+
+            <div class="sgroup">
+              <div class="srow">
+                <div class="srow-info">
+                  <div class="srow-label">Auto-scroll</div>
+                  <div class="srow-desc">Scroll to bottom on new output</div>
+                </div>
+                <div class="srow-control">
+                  <label class="ai-toggle">
+                    <input type="checkbox" id="autoscroll-toggle" checked />
+                    <span class="ai-toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="srow">
+                <div class="srow-info">
+                  <div class="srow-label">Always on top</div>
+                  <div class="srow-desc">Keep window above all other apps</div>
+                </div>
+                <div class="srow-control">
+                  <label class="ai-toggle">
+                    <input type="checkbox" id="pin-toggle" />
+                    <span class="ai-toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="srow">
+                <div class="srow-info">
+                  <div class="srow-label">Notifications</div>
+                  <div class="srow-desc">Notify when a terminal finishes while unfocused</div>
+                </div>
+                <div class="srow-control">
+                  <label class="ai-toggle">
+                    <input type="checkbox" id="notify-toggle" checked />
+                    <span class="ai-toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Background -->
+          <div class="settings-page" data-section="background">
+
+            <div class="sgroup" style="overflow:visible">
+              <div class="srow" style="border-bottom:none;padding-bottom:0">
+                <div class="srow-info">
+                  <div class="srow-label">Terminal background</div>
+                  <div class="srow-desc">A decorative layer behind the terminal output</div>
+                </div>
+              </div>
+              <div id="bg-grid">
+
+                <div class="bg-card active" data-bg="none">
+                  <div class="bg-preview-box bg-p-none"><span class="bg-none-dash">—</span></div>
+                  <div class="bg-card-foot"><span class="bg-card-name">None</span><span class="bg-card-badge">Off</span></div>
+                </div>
+
+                <div class="bg-card" data-bg="dots">
+                  <canvas class="bg-preview-box" data-preview="dots"></canvas>
+                  <div class="bg-card-foot"><span class="bg-card-name">Dot Grid</span><span class="bg-card-badge">Static</span></div>
+                </div>
+
+                <div class="bg-card" data-bg="grid">
+                  <canvas class="bg-preview-box" data-preview="grid"></canvas>
+                  <div class="bg-card-foot"><span class="bg-card-name">Line Grid</span><span class="bg-card-badge">Static</span></div>
+                </div>
+
+                <div class="bg-card" data-bg="scanlines">
+                  <canvas class="bg-preview-box" data-preview="scanlines"></canvas>
+                  <div class="bg-card-foot"><span class="bg-card-name">Scanlines</span><span class="bg-card-badge">Static</span></div>
+                </div>
+
+                <div class="bg-card" data-bg="aurora">
+                  <canvas class="bg-preview-box" data-preview="aurora"></canvas>
+                  <div class="bg-card-foot"><span class="bg-card-name">Aurora</span><span class="bg-card-badge anim">Animated</span></div>
+                </div>
+
+                <div class="bg-card" data-bg="stars">
+                  <canvas class="bg-preview-box" data-preview="stars"></canvas>
+                  <div class="bg-card-foot"><span class="bg-card-name">Starfield</span><span class="bg-card-badge anim">Animated</span></div>
+                </div>
+
+                <div class="bg-card" data-bg="rain">
+                  <canvas class="bg-preview-box" data-preview="rain"></canvas>
+                  <div class="bg-card-foot"><span class="bg-card-name">Rain</span><span class="bg-card-badge anim">Animated</span></div>
+                </div>
+
+                <div class="bg-card" data-bg="flicker">
+                  <canvas class="bg-preview-box" data-preview="flicker"></canvas>
+                  <div class="bg-card-foot"><span class="bg-card-name">Flicker Grid</span><span class="bg-card-badge anim">Animated</span></div>
+                </div>
+
+                <div class="bg-card" data-bg="particles">
+                  <canvas class="bg-preview-box" data-preview="particles"></canvas>
+                  <div class="bg-card-foot"><span class="bg-card-name">Particles</span><span class="bg-card-badge live">Interactive</span></div>
+                </div>
+
+                <div class="bg-card" data-bg="hacker">
+                  <canvas class="bg-preview-box" data-preview="hacker"></canvas>
+                  <div class="bg-card-foot"><span class="bg-card-name">Hacker</span><span class="bg-card-badge anim">Animated</span></div>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="sgroup">
+              <div class="srow">
+                <div class="srow-info">
+                  <div class="srow-label">Intensity</div>
+                  <div class="srow-desc">Visibility of the background effect</div>
+                </div>
+                <div class="srow-control srow-slider-wrap">
+                  <input type="range" id="bg-intensity-slider" min="5" max="70" value="20" />
+                  <span id="bg-intensity-val">20%</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Extras -->
+          <div class="settings-page" data-section="extras">
+
+            <div class="sgroup sgroup-playground">
+              <div class="srow">
+                <div class="srow-info">
+                  <div class="srow-label">Ball speed</div>
+                  <div class="srow-desc">Starting speed of the ping-pong ball</div>
+                </div>
+                <div class="srow-control srow-slider-wrap">
+                  <input type="range" id="ball-speed-slider" min="1" max="5" step="0.5" value="3.6" />
+                  <span id="ball-speed-val">3.6</span>
+                </div>
+              </div>
+              <div class="srow">
+                <div class="srow-info">
+                  <div class="srow-label">Mini game</div>
+                  <div class="srow-desc">Ping-pong overlay in the terminal background</div>
+                </div>
+                <div class="srow-control">
+                  <div class="lever-switch">
+                    <input type="checkbox" id="minigame-toggle" />
+                    <div class="lever-handle-wrap">
+                      <div class="lever-handle">
+                        <div class="lever-knob"></div>
+                        <div class="lever-bar-wrap"><div class="lever-bar"></div></div>
+                      </div>
+                    </div>
+                    <div class="lever-base"><div class="lever-base-inside"></div></div>
+                  </div>
+                </div>
+              </div>
+              <div class="srow">
+                <div class="srow-info">
+                  <div class="srow-label mystery">???</div>
+                  <div class="srow-desc mystery-desc">you found something</div>
+                </div>
+                <div class="srow-control">
+                  <div class="lever-switch">
+                    <input type="checkbox" id="flowfield-toggle" />
+                    <div class="lever-handle-wrap">
+                      <div class="lever-handle">
+                        <div class="lever-knob"></div>
+                        <div class="lever-bar-wrap"><div class="lever-bar"></div></div>
+                      </div>
+                    </div>
+                    <div class="lever-base"><div class="lever-base-inside"></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Command panel -->
+    <div id="cmd-panel" class="hidden">
+      <div id="cmd-tab-bar">
+        <button class="cmd-tab active" data-tab="search">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/><path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Search
+        </button>
+        <button class="cmd-tab" data-tab="history">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          History
+        </button>
+        <button class="cmd-tab" data-tab="save">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 2C7 2 3 6 3 11c0 2.4 1 4.6 2.6 6.2L5 21l4-1.3A9 9 0 1 0 12 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 11h.01M12 11h.01M15 11h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Save
+        </button>
+        <button class="cmd-tab" data-tab="palette">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M14 17.5h7M17.5 14v7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Palette
+        </button>
+        <button class="cmd-tab" data-tab="settings">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="4" y1="18" x2="20" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="9" cy="6" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><circle cx="15" cy="12" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="18" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg>
+          Settings
+        </button>
+      </div>
+
+      <!-- Search page -->
+      <div class="cmd-page active" data-tab="search">
+        <div id="cmd-search-row">
+          <input id="cmd-find-input" type="text" placeholder="Search in terminal…" autocomplete="off" spellcheck="false" />
+          <button id="cmd-find-prev" title="Previous match">↑</button>
+          <button id="cmd-find-next" title="Next match">↓</button>
+        </div>
+        <div id="cmd-search-hint">Type to highlight · ↑↓ to navigate · Esc to clear</div>
+      </div>
+
+      <!-- History page -->
+      <div class="cmd-page" data-tab="history">
+        <input id="history-search" type="text" placeholder="Filter commands…" autocomplete="off" />
+        <div id="history-list"></div>
+      </div>
+
+      <!-- Save (AI Context) page -->
+      <div class="cmd-page" data-tab="save">
+        <div class="cmd-page-label">AI Context</div>
+        <div id="save-ctx-folder-row">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <span id="save-ctx-folder-label">No folder selected</span>
+        </div>
+        <textarea id="save-ctx-note" placeholder="Optional note for other AIs..." rows="3"></textarea>
+        <button id="save-ctx-btn">Save context</button>
+        <button id="save-ctx-load-btn">Load context into terminal</button>
+        <div id="save-ctx-status" class="hidden"></div>
+      </div>
+
+      <!-- Palette page -->
+      <div class="cmd-page" data-tab="palette">
+        <div id="palette-search-wrap">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/><path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <input id="palette-search" type="text" placeholder="Search actions…" autocomplete="off" />
+        </div>
+        <div id="palette-list"></div>
       </div>
     </div>
 
@@ -227,6 +491,29 @@
     <button id="ntp-open-btn">Open Tab</button>
   </div>
 
+  <!-- Confirm dialog -->
+  <div id="confirm-overlay" class="hidden">
+    <div id="confirm-modal">
+      <div id="confirm-titlebar">
+        <div class="confirm-dot red"></div>
+        <div class="confirm-dot yellow"></div>
+        <div class="confirm-dot green"></div>
+        <span id="confirm-titlebar-label">holy-cli — confirm</span>
+      </div>
+      <div id="confirm-body">
+        <div id="confirm-prompt-line">
+          <span id="confirm-prompt-symbol">~/</span>
+          <span id="confirm-msg"></span>
+        </div>
+        <div id="confirm-hint">press ↵ to confirm · esc to cancel</div>
+        <div id="confirm-actions">
+          <button id="confirm-cancel-btn">Cancel</button>
+          <button id="confirm-ok-btn">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Drop overlay -->
   <div id="drop-overlay" class="hidden">
     <div id="drop-hint">Drop files to paste path</div>
@@ -241,6 +528,9 @@
       <li class="divider"></li>
       <li id="ctx-clear">Clear</li>
       <li id="ctx-autoscroll">Auto-scroll: on</li>
+      <li class="divider"></li>
+      <li id="ctx-split">Split view</li>
+      <li id="ctx-close-tab">Close tab</li>
     </ul>
   </div>
 
