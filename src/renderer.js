@@ -12,6 +12,9 @@ let selectedFolder = ''
 let savedFolders = JSON.parse(localStorage.getItem('savedFolders') || '[]')
 const tabs = []
 
+const TAB_COLORS = ['#a78bfa','#34d399','#f87171','#fbbf24','#38bdf8','#f472b6','#4ade80','#fb923c']
+let tabColorIdx = 0
+
 // New tab picker state
 let newTabShell = 'powershell'
 let newTabAI = 'none'
@@ -149,6 +152,209 @@ function setFlowField(enabled) {
 
 window.addEventListener('resize', () => { if (flowEnabled) flowResize() })
 
+// ── Mini Game ────────────────────────────────────────────────────────────
+let gameEnabled = JSON.parse(localStorage.getItem('miniGame') || 'false')
+let gameAnimId = null
+let gameW = 0, gameH = 0
+let gameCtx = null
+
+const G = {
+  ball:    { x: 0, y: 0, vx: 0, vy: 0, r: 8 },
+  paddle:  { x: 0, w: 90, h: 10 },
+  hearts:  3,
+  damageAlpha: 0,   // 0–1, red flash
+  gameOver: false,
+  gameOverTimer: 0,
+  speed: 1,         // speed multiplier, grows slowly
+  mouseX: -1,
+}
+
+function gameColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a78bfa'
+}
+
+function gameReset(fullReset = false) {
+  if (fullReset) { G.hearts = 3; G.speed = 1 }
+  const canvas = document.getElementById('game-canvas')
+  if (!canvas) return
+  gameW = canvas.offsetWidth
+  gameH = canvas.offsetHeight
+  G.ball.x = gameW / 2
+  G.ball.y = gameH * 0.38
+  const angle = (-55 + Math.random() * 50) * (Math.PI / 180) // ~-55° to -5° (upward)
+  const spd = (3.6 + G.speed * 0.4)
+  G.ball.vx = Math.cos(angle) * spd * (Math.random() < 0.5 ? 1 : -1)
+  G.ball.vy = -Math.abs(Math.sin(angle) * spd) - 2
+  G.paddle.x = gameW / 2 - G.paddle.w / 2
+  G.gameOver = false
+}
+
+function gameResize() {
+  const canvas = document.getElementById('game-canvas')
+  if (!canvas) return
+  const dpr = window.devicePixelRatio || 1
+  gameW = canvas.offsetWidth
+  gameH = canvas.offsetHeight
+  canvas.width = gameW * dpr
+  canvas.height = gameH * dpr
+  gameCtx = canvas.getContext('2d')
+  gameCtx.scale(dpr, dpr)
+}
+
+function gameDamage() {
+  G.hearts = Math.max(0, G.hearts - 1)
+  G.damageAlpha = 1
+  G.speed = Math.min(G.speed + 0.15, 3)
+
+  // Screen shake via CSS class
+  const area = document.getElementById('terminal-area')
+  area.classList.remove('game-shake')
+  requestAnimationFrame(() => area.classList.add('game-shake'))
+  setTimeout(() => area.classList.remove('game-shake'), 310)
+
+  if (G.hearts <= 0) {
+    G.gameOver = true
+    G.gameOverTimer = 180 // ~3s at 60fps
+  } else {
+    setTimeout(() => gameReset(false), 700)
+  }
+}
+
+function gameLoop() {
+  if (!gameEnabled || !gameCtx) return
+
+  gameCtx.clearRect(0, 0, gameW, gameH)
+
+  // ── Paddle follows mouse ─────────────────────────────────────────────
+  if (G.mouseX >= 0) {
+    const target = G.mouseX - G.paddle.w / 2
+    G.paddle.x += (target - G.paddle.x) * 0.22
+    G.paddle.x = Math.max(0, Math.min(gameW - G.paddle.w, G.paddle.x))
+  }
+  const paddleY = gameH - 28
+
+  const col = gameColor()
+
+  if (!G.gameOver) {
+    // ── Ball physics ───────────────────────────────────────────────────
+    G.ball.x += G.ball.vx
+    G.ball.y += G.ball.vy
+
+    // Wall bounces
+    if (G.ball.x - G.ball.r < 0)      { G.ball.x = G.ball.r;        G.ball.vx = Math.abs(G.ball.vx) }
+    if (G.ball.x + G.ball.r > gameW)  { G.ball.x = gameW - G.ball.r; G.ball.vx = -Math.abs(G.ball.vx) }
+    if (G.ball.y - G.ball.r < 0)      { G.ball.y = G.ball.r;        G.ball.vy = Math.abs(G.ball.vy) }
+
+    // Paddle bounce — angle based on hit position
+    const withinX = G.ball.x > G.paddle.x - 4 && G.ball.x < G.paddle.x + G.paddle.w + 4
+    if (withinX && G.ball.vy > 0 && G.ball.y + G.ball.r >= paddleY && G.ball.y + G.ball.r <= paddleY + G.ball.r + G.ball.vy + 2) {
+      const hitPos = (G.ball.x - G.paddle.x) / G.paddle.w // 0–1
+      const angle  = (hitPos - 0.5) * 2.2                  // -1.1 to 1.1 rad
+      const spd    = Math.hypot(G.ball.vx, G.ball.vy)
+      G.ball.vx    = Math.sin(angle) * spd
+      G.ball.vy    = -Math.abs(Math.cos(angle) * spd)
+      G.ball.y     = paddleY - G.ball.r - 1
+      // Slight speed creep
+      G.speed = Math.min(G.speed + 0.01, 3)
+      const maxSpd = 3.6 + G.speed * 0.4 + 4
+      const curSpd = Math.hypot(G.ball.vx, G.ball.vy)
+      if (curSpd > maxSpd) { G.ball.vx *= maxSpd / curSpd; G.ball.vy *= maxSpd / curSpd }
+    }
+
+    // Ball fell past paddle
+    if (G.ball.y - G.ball.r > gameH + 10) {
+      gameDamage()
+    }
+
+    // ── Draw ball ──────────────────────────────────────────────────────
+    gameCtx.save()
+    gameCtx.shadowColor = col
+    gameCtx.shadowBlur = 14
+    gameCtx.beginPath()
+    gameCtx.arc(G.ball.x, G.ball.y, G.ball.r, 0, Math.PI * 2)
+    gameCtx.fillStyle = col
+    gameCtx.fill()
+    gameCtx.restore()
+  }
+
+  // ── Draw paddle ──────────────────────────────────────────────────────
+  gameCtx.save()
+  gameCtx.shadowColor = col
+  gameCtx.shadowBlur = 12
+  const pr = G.paddle.h / 2
+  gameCtx.beginPath()
+  gameCtx.roundRect(G.paddle.x, paddleY, G.paddle.w, G.paddle.h, pr)
+  gameCtx.fillStyle = col
+  gameCtx.fill()
+  gameCtx.restore()
+
+  // ── Draw hearts ──────────────────────────────────────────────────────
+  for (let i = 0; i < 3; i++) {
+    const filled = i < G.hearts
+    gameCtx.font = '13px sans-serif'
+    gameCtx.globalAlpha = filled ? 0.9 : 0.22
+    gameCtx.fillStyle = filled ? '#f87171' : '#ffffff'
+    gameCtx.fillText('♥', 12 + i * 20, 22)
+  }
+  gameCtx.globalAlpha = 1
+
+  // ── Damage red flash ─────────────────────────────────────────────────
+  if (G.damageAlpha > 0) {
+    gameCtx.fillStyle = `rgba(248,113,113,${G.damageAlpha * 0.28})`
+    gameCtx.fillRect(0, 0, gameW, gameH)
+    G.damageAlpha = Math.max(0, G.damageAlpha - 0.04)
+  }
+
+  // ── Game over screen ─────────────────────────────────────────────────
+  if (G.gameOver) {
+    gameCtx.fillStyle = 'rgba(0,0,0,0.55)'
+    gameCtx.fillRect(0, 0, gameW, gameH)
+    gameCtx.font = 'bold 22px "Segoe UI",system-ui,sans-serif'
+    gameCtx.textAlign = 'center'
+    gameCtx.fillStyle = '#f87171'
+    gameCtx.shadowColor = '#f87171'
+    gameCtx.shadowBlur = 18
+    gameCtx.fillText('GAME OVER', gameW / 2, gameH / 2 - 12)
+    gameCtx.shadowBlur = 0
+    gameCtx.font = '12px "Segoe UI",system-ui,sans-serif'
+    gameCtx.fillStyle = 'rgba(255,255,255,0.5)'
+    gameCtx.fillText('restarting…', gameW / 2, gameH / 2 + 14)
+    gameCtx.textAlign = 'left'
+    G.gameOverTimer--
+    if (G.gameOverTimer <= 0) gameReset(true)
+  }
+
+  gameAnimId = requestAnimationFrame(gameLoop)
+}
+
+function setMiniGame(enabled) {
+  gameEnabled = enabled
+  localStorage.setItem('miniGame', JSON.stringify(enabled))
+  const canvas = document.getElementById('game-canvas')
+  if (!canvas) return
+  if (enabled) {
+    canvas.classList.add('active')
+    gameResize()
+    gameReset(true)
+    gameLoop()
+  } else {
+    canvas.classList.remove('active')
+    if (gameAnimId) { cancelAnimationFrame(gameAnimId); gameAnimId = null }
+    if (gameCtx) gameCtx.clearRect(0, 0, gameW, gameH)
+  }
+}
+
+// Mouse tracking for paddle — on document so terminal stays interactive
+document.addEventListener('mousemove', e => {
+  if (!gameEnabled) return
+  const area = document.getElementById('terminal-area')
+  if (!area) return
+  const rect = area.getBoundingClientRect()
+  G.mouseX = e.clientX - rect.left
+})
+
+window.addEventListener('resize', () => { if (gameEnabled) { gameResize(); G.paddle.x = Math.min(G.paddle.x, gameW - G.paddle.w) } })
+
 // ── ANSI strip ───────────────────────────────────────────────────────────
 function stripAnsi(s) {
   return s
@@ -208,7 +414,8 @@ function createTab(opts = {}) {
   el.dataset.tabId = id
   el.style.cssText = 'width:100%;height:100%;display:none'
 
-  const tab = { id, name, term, fitAddon, searchAddon, el, buffer: '', notifyTimer: null, startTime, isSplitTab, folder: opts.folder ?? null, aiType: opts.aiType ?? 'none' }
+  const color = opts.color ?? TAB_COLORS[tabColorIdx++ % TAB_COLORS.length]
+  const tab = { id, name, term, fitAddon, searchAddon, el, buffer: '', notifyTimer: null, startTime, isSplitTab, folder: opts.folder ?? null, aiType: opts.aiType ?? 'none', color }
   tabs.push(tab)
 
   term.onData(data => api.terminal.sendInput(id, data))
@@ -254,6 +461,11 @@ function renderTabBar() {
     el.className = 'tab-item' + (tab.id === activeTabId ? ' active' : '')
     el.draggable = true
     el.dataset.tabId = tab.id
+    el.style.setProperty('--tab-color', tab.color)
+
+    const dot = document.createElement('span')
+    dot.className = 'tab-color-dot'
+    el.appendChild(dot)
 
     const nameEl = document.createElement('span')
     nameEl.className = 'tab-name'
@@ -582,7 +794,8 @@ function renderNtpSavedFolders() {
 
     const label = document.createElement('span')
     label.textContent = name
-    label.addEventListener('click', () => {
+    label.addEventListener('click', e => {
+      e.stopPropagation()
       newTabFolder = newTabFolder === path ? '' : path
       document.getElementById('ntp-folder-label').textContent = newTabFolder || 'Choose folder (optional)'
       document.getElementById('ntp-pick-folder').classList.toggle('has-path', !!newTabFolder)
@@ -608,10 +821,9 @@ function renderNtpSavedFolders() {
 
 btnNewTab.addEventListener('click', e => {
   e.stopPropagation()
-  const hidden = ntpPanel.classList.contains('hidden')
-  if (hidden) {
+  const isOpen = ntpPanel.classList.contains('visible')
+  if (!isOpen) {
     renderNtpSavedFolders()
-    ntpPanel.classList.remove('hidden')
     const btnRect = btnNewTab.getBoundingClientRect()
     const pw = ntpPanel.getBoundingClientRect().width
     const ph = ntpPanel.getBoundingClientRect().height
@@ -621,15 +833,18 @@ btnNewTab.addEventListener('click', e => {
     ntpPanel.style.top = top + 'px'
     ntpPanel.style.right = 'auto'
     ntpPanel.style.bottom = 'auto'
+    ntpPanel.classList.add('visible')
+    const activeShellChip = ntpPanel.querySelector('#shell-chip-group .chip.active')
+    if (activeShellChip) activeShellChip.focus()
   } else {
-    ntpPanel.classList.add('hidden')
+    ntpPanel.classList.remove('visible')
   }
-  btnNewTab.classList.toggle('active', hidden)
+  btnNewTab.classList.toggle('active', !isOpen)
 })
 
 document.addEventListener('click', e => {
   if (!ntpPanel.contains(e.target) && e.target !== btnNewTab) {
-    ntpPanel.classList.add('hidden')
+    ntpPanel.classList.remove('visible')
     btnNewTab.classList.remove('active')
   }
 })
@@ -649,6 +864,24 @@ document.querySelectorAll('#ai-chip-group .chip').forEach(btn => {
     document.querySelectorAll('#ai-chip-group .chip').forEach(b => b.classList.toggle('active', b === btn))
     document.getElementById('ntp-skip-row').classList.toggle('hidden', newTabAI === 'none')
   })
+})
+
+// Keyboard nav in NTP panel
+ntpPanel.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { document.getElementById('ntp-open-btn').click(); return }
+  if (e.key === 'Escape') { ntpPanel.classList.remove('visible'); btnNewTab.classList.remove('active'); return }
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+  const focused = document.activeElement
+  if (!focused || !focused.classList.contains('chip')) return
+  e.preventDefault()
+  const group = focused.closest('.chip-group')
+  const chips = [...group.querySelectorAll('.chip')]
+  const idx = chips.indexOf(focused)
+  const next = e.key === 'ArrowRight'
+    ? chips[(idx + 1) % chips.length]
+    : chips[(idx - 1 + chips.length) % chips.length]
+  next.focus()
+  next.click()
 })
 
 // Folder picker in new tab panel
@@ -674,7 +907,7 @@ document.getElementById('ntp-open-btn').addEventListener('click', () => {
   const tab = createTab({ name: tabName, shellType: newTabShell, folder: newTabFolder || null, aiType: newTabAI })
   renderTabBar()
   switchTab(tab.id)
-  ntpPanel.classList.add('hidden')
+  ntpPanel.classList.remove('visible')
   btnNewTab.classList.remove('active')
 
   if (newTabAI !== 'none') {
@@ -734,6 +967,7 @@ document.getElementById('notify-toggle').addEventListener('change', e => {
   localStorage.setItem('notifications', notificationsEnabled)
 })
 document.getElementById('flowfield-toggle').addEventListener('change', e => { setFlowField(e.target.checked) })
+document.getElementById('minigame-toggle').addEventListener('change', e => { setMiniGame(e.target.checked) })
 document.querySelectorAll('.theme-btn').forEach(btn => btn.addEventListener('click', () => applyTheme(btn.dataset.theme)))
 
 // ── Save Context Panel ────────────────────────────────────────────────────
@@ -845,4 +1079,10 @@ if (flowEnabled) {
   const start = () => setFlowField(true)
   if (typeof requestIdleCallback !== 'undefined') requestIdleCallback(start, { timeout: 1500 })
   else setTimeout(start, 0)
+}
+
+// Restore mini game state
+if (gameEnabled) {
+  document.getElementById('minigame-toggle').checked = true
+  setTimeout(() => setMiniGame(true), 200) // after layout settles
 }

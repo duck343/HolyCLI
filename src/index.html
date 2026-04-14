@@ -126,6 +126,7 @@
         <div id="terminal-pane-main"></div>
         <div id="split-resizer" class="hidden"></div>
         <div id="terminal-pane-split" class="hidden"></div>
+        <canvas id="game-canvas"></canvas>
       </div>
     </div>
 
@@ -154,6 +155,10 @@
         <label class="row">
           <span>Notifications</span>
           <input type="checkbox" id="notify-toggle" checked />
+        </label>
+        <label class="row">
+          <span>Mini game</span>
+          <input type="checkbox" id="minigame-toggle" />
         </label>
         <label class="row">
           <span>Flow field</span>
@@ -188,7 +193,7 @@
   </div>
 
   <!-- New Tab Picker Panel -->
-  <div id="ntp-panel" class="hidden">
+  <div id="ntp-panel">
     <div class="ntp-label">SHELL</div>
     <div class="chip-group" id="shell-chip-group">
       <button class="chip active" data-shell="powershell">PowerShell</button>
